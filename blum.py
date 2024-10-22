@@ -409,9 +409,9 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        queries = read_queries('experiment.txt')
+        queries = read_queries('query.txt')
         if not queries:
-            print(f"{RED}No queries found in experiment.txt. Exiting...{RESET}")
+            print(f"{RED}No queries found in query.txt. Exiting...{RESET}")
             return
 
         while True:
