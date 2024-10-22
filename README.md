@@ -1,5 +1,5 @@
 # Blum Bot
-
+# THE SERVER PAYLOAD NO LONGER WORK! PLEASE DONATE SO I CAN BUY ANOTHER SERVER 😭😭😭
 A bot for automation with multi-threading capabilities.
 
 ## Getting Started
