@@ -1,17 +1,14 @@
 # Blum Bot
 
 A bot for automation with multi-threading capabilities.
-# Blum Bot
-
-A bot for automation with multi-threading capabilities.
 
 ## Getting Started
 
-First, join Blum:
+First, join Blum by clicking here:
 
-<div align="center">
+<div align="justify">
 
-[![Join Blum](https://img.shields.io/badge/-%2FZUYDD-blue?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/blum/app?startapp=ref_eWbRQkPdY2)
+[![Join Blum](https://img.shields.io/badge/Join-BLUM-blue?style=for-the-badge&logo=telegram)](https://t.me/blum/app?startapp=ref_eWbRQkPdY2)
 
 </div>
 
