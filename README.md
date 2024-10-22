@@ -6,10 +6,10 @@ A bot for automation with multi-threading capabilities.
 
 First, join Blum by clicking here:
 
-<div align="justify">
-
-[![Join Blum](https://img.shields.io/badge/Join-BLUM-blue?style=for-the-badge&logo=telegram)](https://t.me/blum/app?startapp=ref_eWbRQkPdY2)
-
+<div align="center">
+  <a href="https://t.me/blum/app?startapp=ref_eWbRQkPdY2">
+    <img src="https://img.shields.io/badge/Join-BLUM-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="60" alt="Join Blum"/>
+  </a>
 </div>
 
 ## Requirements
