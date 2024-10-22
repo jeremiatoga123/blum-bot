@@ -6,9 +6,9 @@ A bot for automation with multi-threading capabilities.
 
 First, join Blum by clicking here:
 
-<div align="center">
+<div align="justify">
   <a href="https://t.me/blum/app?startapp=ref_eWbRQkPdY2">
-    <img src="https://img.shields.io/badge/Join-BLUM-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="60" alt="Join Blum"/>
+    <img src="https://img.shields.io/badge/-%2FZUYDD-black?style=for-the-badge&logo=telegram&color=26A5E4" height="45" alt="Telegram Badge"/>
   </a>
 </div>
 
