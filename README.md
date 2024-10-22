@@ -28,8 +28,8 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Create a file named `experiment.txt` in the same directory as the bot
-2. Add your queries to `experiment.txt`
+1. Create a file named `query.txt` in the same directory as the bot
+2. Add your queries to `query.txt`
 3. Run the bot:
 ```bash
 python blum.py
