@@ -108,8 +108,7 @@ pip install -r requirements.txt -v
 
 ## Disclaimer
 
-I sell api key too, if you interested please dm me at telegram @ggtogss
-This bot is for educational purposes only. Use at your own risk.
+This bot is for educational purposes only. Use at your own risk. I sell api key too, if you interested please dm me at telegram @ggtogss
 
 ## Author
 
