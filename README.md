@@ -1,5 +1,4 @@
 # Blum Bot
-# THE SERVER PAYLOAD NO LONGER WORK! PLEASE DONATE SO I CAN BUY ANOTHER SERVER 😭😭😭
 A bot for automation with multi-threading capabilities.
 
 ## Getting Started
@@ -109,6 +108,17 @@ pip install -r requirements.txt -v
 ## Disclaimer
 
 This bot is for educational purposes only. Use at your own risk.
+Please don't spam if you don't want the api down
+
+## API Key
+
+This is free Api, but if you need private api key dm me
+
+<div align="justify">
+  <a href="https://t.me/@ggtogss">
+    <img src="https://img.shields.io/badge/Join-BLUM-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
+  </a>
+</div>
 
 ## Author
 

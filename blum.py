@@ -15,7 +15,7 @@ CYAN = "\033[96m"
 RESET = "\033[0m"
 GREEN = "\033[92m"
 
-PAYLOAD_SERVER_URL = "https://ggtog.live/api/generate-payload"
+PAYLOAD_SERVER_URL = "https://blum-toga-c3d9617e40ff.herokuapp.com/api/game"
 should_exit = False
 run_config = {
     'min_clover': 200,
@@ -169,27 +169,43 @@ def play_game(access_token, username, retries=3, delay=2):
             time.sleep(delay)
     return None, None
 
-def generate_payload(game_id, clover_amount):
+def generate_payload(game_id, clover_amount, max_retries=3, delay=2):
     global should_exit
     payload_data = {
         "gameId": game_id,
         "cloverAmount": clover_amount
     }
-    try:
-        response = requests.post(PAYLOAD_SERVER_URL, json=payload_data)
-        if response.status_code == 200:
-            response_json = response.json()
-            if 'hash' in response_json:
-                return response_json['hash']
+    
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(PAYLOAD_SERVER_URL, json=payload_data)
+            
+            if response.status_code == 200:
+                response_json = response.json()
+                if 'payload' in response_json:
+                    return response_json['payload']
+                else:
+                    print(f"{YELLOW}Attempt {attempt + 1}: Response does not contain 'payload'{RESET}")
             else:
-                print(f"{YELLOW}Response does not contain 'hash'{RESET}")
+                print(f"{YELLOW}Attempt {attempt + 1}: Failed to generate payload. Status: {response.status_code}{RESET}")
+            
+            if attempt < max_retries - 1:
+                print(f"{YELLOW}Waiting {delay} seconds before retry...{RESET}")
+                time.sleep(delay)
+            else:
+                print(f"{RED}Failed to generate payload after {max_retries} attempts. Stopping game...{RESET}")
                 return None
-        else:
-            print(f"{YELLOW}Failed to generate payload. Status: {response.status_code}{RESET}")
-            return None
-    except Exception as e:
-        print(f"{RED}Payload generation error: {e}{RESET}")
-        return None
+                
+        except Exception as e:
+            print(f"{RED}Attempt {attempt + 1}: Payload generation error: {e}{RESET}")
+            if attempt < max_retries - 1:
+                print(f"{YELLOW}Waiting {delay} seconds before retry...{RESET}")
+                time.sleep(delay)
+            else:
+                print(f"{RED}Failed to generate payload after {max_retries} attempts. Stopping game...{RESET}")
+                return None
+    
+    return None
         
 def claim_game(access_token, payload, max_retries=5, initial_delay=2):
     global should_exit
@@ -237,7 +253,7 @@ def simple_countdown(seconds, username):
             return
         remaining = int(seconds - (time.time() - start_time))
         print(f"[{username}] : {CYAN}{remaining} seconds remaining...{RESET}", end='\r')
-        time.sleep(0.1)  # Check for interrupts frequently, but don't update display as often
+        time.sleep(0.1)  
     print(f"[{username}] : {CYAN}Countdown finished!            {RESET}")
 
 def get_clover_amount():
@@ -324,7 +340,7 @@ def process_query(query):
         if not game_id:
             return f"{RED}Failed to start the game for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
         
-        simple_countdown(30, username)  # Wait for game to finish
+        simple_countdown(30, username)  
         if should_exit:
             break
 
@@ -336,9 +352,9 @@ def process_query(query):
 
         payload = generate_payload(game_id, clover_amount)
         if not payload:
-            print(f"[{username}] : {YELLOW}Failed to generate payload. Skipping this game...{RESET}")
-            continue
-
+            should_exit = True 
+            raise Exception("Payload generation failed") 
+            
         success = claim_game(bearer, payload)
         if success:
             print(f"[{username}] : {GREEN}Game claimed successfully{RESET}")
@@ -358,7 +374,7 @@ def process_query(query):
             print(f"[{username}] : {RED}Failed to get final balance.{RESET}")
 
         print(f"[{username}] : {CYAN}Waiting 3 seconds before next game...{RESET}")
-        simple_countdown(3, username)  # Wait before next game
+        simple_countdown(3, username) 
         if should_exit:
             break
 
@@ -378,7 +394,6 @@ def check_account_info(query):
         return f"{RED}Failed to authenticate for query: {query}{RESET}"
 
     username = auth_response['token']['user']['username']
-    # Mengambil user ID dengan benar dari struktur response
     user_id = auth_response['token']['user'].get('id', {})
     full_id = user_id['id'] if isinstance(user_id, dict) and 'id' in user_id else 'N/A'
     
@@ -409,7 +424,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        queries = read_queries('query.txt')
+        queries = read_queries('queryexperimen.txt')
         if not queries:
             print(f"{RED}No queries found in query.txt. Exiting...{RESET}")
             return
@@ -418,14 +433,13 @@ def main():
             choice = show_menu()
             
             if choice == '1':
-                # Input clover amount sebelum thread
                 min_points, max_points = get_clover_amount()
                 run_config['min_clover'] = min_points
                 run_config['max_clover'] = max_points
                 print(f"{GREEN}Range points to be used : {RESET}{min_points} - {max_points}")
                 
                 try:
-                    num_threads = int(input(f"\nEnter the number of threads to use: {RESET}"))
+                    num_threads = int(input(f"\nEnter the number of threads to use : {RESET}"))
                     print(f"\n{BLUE}Starting game process with {num_threads} threads\n{RESET}")
                 except ValueError:
                     print(f"{RED}Thread input must be a number! Using defaults (1){RESET}")
@@ -436,7 +450,7 @@ def main():
                         while future_to_query:
                             if should_exit:
                                 break
-                            done, _ = concurrent.futures.wait(
+                            done, not_done = concurrent.futures.wait(
                                 future_to_query, timeout=0.1,
                                 return_when=concurrent.futures.FIRST_COMPLETED
                             )
@@ -444,12 +458,17 @@ def main():
                                 query = future_to_query[future]
                                 try:
                                     result = future.result(timeout=60)
-                                    if result:
-                                        print(result)
+                                    if should_exit:  
+                                        raise Exception("Payload server is down")
                                 except TimeoutError:
                                     print(f"{RED}Timeout: {query}{RESET}")
                                 except Exception as e:
-                                    print(f"{RED}Error processing {query}: {str(e)}{RESET}")
+                                    for f in not_done:
+                                        f.cancel()
+                                    executor.shutdown(wait=False)
+                                    should_exit = False  
+                                    return  
+                                    print(f"\n{RED}Error detected. Stopping all processes...{RESET}")
                                 del future_to_query[future]
                             if should_exit:
                                 break
