@@ -107,7 +107,6 @@ pip install -r requirements.txt -v
 
 ## Disclaimer
 
-<<<<<<< HEAD
 This bot is for educational purposes only. Use at your own risk.
 Please don't spam if you don't want the api down
 
@@ -117,12 +116,10 @@ This is free Api, but if you need private api key dm me
 
 <div align="justify">
   <a href="https://t.me/@ggtogss">
-    <img src="https://img.shields.io/badge/Join-BLUM-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
+    <img src="https://img.shields.io/badge/@ggtogs-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
   </a>
 </div>
-=======
-This bot is for educational purposes only. Use at your own risk. I sell api key too, if you interested please dm me at telegram @ggtogss
->>>>>>> bc3817f9bfb1788d0ecbc7f717a71c725230cd99
+
 
 ## Author
 
