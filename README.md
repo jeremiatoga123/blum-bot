@@ -116,7 +116,7 @@ This is free Api, but if you need private api key dm me
 
 <div align="justify">
   <a href="https://t.me/@ggtogss">
-    <img src="https://img.shields.io/badge/@ggtogs-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
+    <img src="https://img.shields.io/badge/@ggtogss-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
   </a>
 </div>
 
