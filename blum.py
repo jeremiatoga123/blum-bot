@@ -128,13 +128,12 @@ def send_farming_summary(bot_token, chat_id, farming_data):
 
 def update_farming_stats(username, points, tickets, profit):
     """Update farming statistics"""
-    farming_summary['total_points'] += points
-    farming_summary['total_tickets'] += tickets
-    farming_summary['total_profit'] += profit
-    
     if username not in [acc['username'] for acc in farming_summary['active_accounts']]:
         farming_summary['active_accounts'].append({'username': username})
+        farming_summary['total_points'] = int(points) 
     
+    farming_summary['total_tickets'] += tickets
+    farming_summary['total_profit'] += profit
     farming_summary['duration'] = (time.time() - farming_summary['start_time']) / 3600
 
 def auth(query, retries=3, delay=2):
@@ -386,6 +385,11 @@ def process_query(query):
 
     account_profit = 0
     account_games_played = 0
+    account_points = 0  
+
+    initial_balance = get_balance(bearer)
+    if not initial_balance:
+        return f"{RED}Failed to get current balance for {username}{RESET}"
 
     while not should_exit:
         current_balance = get_balance(bearer)
@@ -393,8 +397,14 @@ def process_query(query):
             return f"{RED}Failed to get current balance for {username}{RESET}"
 
         play_passes = int(current_balance.get('playPasses', 0))
-        available_balance = current_balance.get('availableBalance', '0')
+        available_balance = float(current_balance.get('availableBalance', '0'))
         if play_passes <= 0:
+            update_farming_stats(
+                username=username,
+                points=int(available_balance),
+                tickets=0,
+                profit=0
+            )
             return f"{YELLOW}No more Ticket available for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
         print(f"[{username}] : {CYAN}Available Balance: {available_balance}{RESET}")
@@ -431,12 +441,6 @@ def process_query(query):
             game_profit = calculate_profit(current_balance, final_balance)
             account_profit += game_profit
             account_games_played += 1
-            update_farming_stats(
-                username=username,
-                points=int(clover_amount),
-                tickets=1,
-                profit=game_profit
-            )
             print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
             print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
             print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
