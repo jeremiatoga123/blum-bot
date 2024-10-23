@@ -5,9 +5,9 @@ import random
 import signal
 import threading
 import concurrent.futures
+from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 
-# Color codes
 RED = "\033[91m"
 YELLOW = "\033[93m"
 BLUE = "\033[94m"
@@ -23,7 +23,6 @@ run_config = {
 }
 
 def print_header():
-    # ASCII art untuk "Myeong Tools"
     header = """
     ███╗   ███╗██╗   ██╗███████╗ ██████╗ ███╗   ██╗ ██████╗ 
     ████╗ ████║╚██╗ ██╔╝██╔════╝██╔═══██╗████╗  ██║██╔════╝ 
@@ -39,12 +38,10 @@ def print_header():
                            ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚══════╝
     """
     
-    # Warna ANSI
     BLUE = '\033[94m'
     GREEN = '\033[92m'
     RESET = '\033[0m'
     
-    # Animasi sederhana
     print(BLUE + header + RESET)
     print(GREEN + "=" * 70 + RESET)
     print(YELLOW + "\t\t\tSupport & Donations" + RESET)
@@ -70,6 +67,75 @@ def signal_handler(signum, frame):
 def read_queries(filename):
     with open(filename, 'r') as file:
         return [line.strip() for line in file if line.strip()]
+
+        
+
+farming_summary = {
+    'total_points': 0,
+    'total_tickets': 0,
+    'total_profit': 0,
+    'active_accounts': [],
+    'start_time': time.time(),
+    'duration': 0
+}
+
+load_dotenv()
+bot_token = os.getenv('TELEGRAM_BOT_TOKEN', None)
+chat_id = os.getenv('TELEGRAM_CHAT_ID', None)
+
+def send_telegram_message(bot_token, chat_id, message):
+    if not bot_token or not chat_id:
+        return  
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        if response.status_code == 200:
+            print(f"{GREEN}Message sent to Telegram{RESET}")
+    except requests.RequestException as e:
+        print(f"{YELLOW}Telegram notification disabled or failed: {e}{RESET}")
+
+def send_farming_summary(bot_token, chat_id, farming_data):
+    """Send farming summary to Telegram if credentials are available"""
+    if not bot_token or not chat_id:
+        print(f"{YELLOW}Telegram notifications disabled. No bot_token or chat_id provided.{RESET}")
+        return
+
+    total_points = farming_data['total_points']
+    total_tickets = farming_data['total_tickets']
+    total_profit = farming_data['total_profit']
+    active_accounts = len(farming_data['active_accounts'])
+    duration = farming_data['duration']
+    
+    message = (
+        "🤖 <b>BLUM BOT FARMING SUMMARY</b>\n"
+        "═══════════════════════\n\n"
+        f"⏱️ Duration: <code>{duration:.2f} hours</code>\n\n"
+        f"📊 <b>FARMING STATS</b>\n"
+        f"🎯 Total Points: <code>{total_points:,}</code>\n"
+        f"🎟️ Tickets Used: <code>{total_tickets}</code>\n"
+        f"💰 Total Profit: <code>{total_profit:,.2f}</code>\n\n"
+        f"👥 <b>ACCOUNTS INFO</b>\n"
+        f"📱 Active Accounts: <code>{active_accounts}</code>"
+    )
+    
+    send_telegram_message(bot_token, chat_id, message)
+
+def update_farming_stats(username, points, tickets, profit):
+    """Update farming statistics"""
+    farming_summary['total_points'] += points
+    farming_summary['total_tickets'] += tickets
+    farming_summary['total_profit'] += profit
+    
+    if username not in [acc['username'] for acc in farming_summary['active_accounts']]:
+        farming_summary['active_accounts'].append({'username': username})
+    
+    farming_summary['duration'] = (time.time() - farming_summary['start_time']) / 3600
 
 def auth(query, retries=3, delay=2):
     global should_exit
@@ -218,8 +284,6 @@ def claim_game(access_token, payload, max_retries=5, initial_delay=2):
             return False
         try:
             game_response = requests.post(game_url, headers=headers, json=game_data)
-            print(f"{BLUE}Sending payload to game server...{RESET}")
-            
             if game_response.status_code == 200:
                 return True
             elif game_response.status_code == 400 and "game session not finished" in game_response.text.lower():
@@ -263,7 +327,7 @@ def get_clover_amount():
         min_amount = int(input(f"{GREEN}Enter minimum points   : {RESET}"))
         max_amount = int(input(f"{GREEN}Enter maximum points   : {RESET}"))
         if min_amount > max_amount:
-            min_amount, max_amount = max_amount, min_amount  # Swap jika min lebih besar dari max
+            min_amount, max_amount = max_amount, min_amount 
         return min_amount, max_amount
     except ValueError:
         print(f"{RED}Input must be a number! Using default (200){RESET}")
@@ -367,6 +431,12 @@ def process_query(query):
             game_profit = calculate_profit(current_balance, final_balance)
             account_profit += game_profit
             account_games_played += 1
+            update_farming_stats(
+                username=username,
+                points=int(clover_amount),
+                tickets=1,
+                profit=game_profit
+            )
             print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
             print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
             print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
@@ -424,7 +494,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        queries = read_queries('query.txt')
+        queries = read_queries('query2.txt')
         if not queries:
             print(f"{RED}No queries found in query.txt. Exiting...{RESET}")
             return
@@ -433,6 +503,20 @@ def main():
             choice = show_menu()
             
             if choice == '1':
+                if bot_token and chat_id:
+                    print(f"{YELLOW}\nTelegram notifications Enabled{RESET}")
+                else:
+                    print(f"{YELLOW}\nTelegram notifications Disabled{RESET}")
+
+                global farming_summary
+                farming_summary = {
+                    'total_points': 0,
+                    'total_tickets': 0,
+                    'total_profit': 0,
+                    'active_accounts': [],
+                    'start_time': time.time(),
+                    'duration': 0
+                }
                 min_points, max_points = get_clover_amount()
                 run_config['min_clover'] = min_points
                 run_config['max_clover'] = max_points
@@ -446,6 +530,8 @@ def main():
                     num_threads = 1
                 with ThreadPoolExecutor(max_workers=num_threads) as executor:
                     future_to_query = {executor.submit(process_query, query): query for query in queries}
+                    completed_accounts = 0
+                    total_accounts = len(queries)
                     try:
                         while future_to_query:
                             if should_exit:
@@ -458,6 +544,9 @@ def main():
                                 query = future_to_query[future]
                                 try:
                                     result = future.result(timeout=60)
+                                    completed_accounts += 1
+                                    if completed_accounts == total_accounts:
+                                        send_farming_summary(bot_token, chat_id, farming_summary)
                                     if should_exit:  
                                         raise Exception("Payload server is down")
                                 except TimeoutError:

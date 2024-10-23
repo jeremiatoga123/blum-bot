@@ -35,6 +35,26 @@ cd blum-bot
 pip install -r requirements.txt
 ```
 
+## Telegram Notifications
+
+The bot supports sending farming summaries to Telegram. To enable this feature:
+
+1. Create a `.env` file in the root directory
+2. Add your Telegram credentials:
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+```
+
+When enabled, you'll receive notifications containing:
+- Farming duration
+- Total points collected
+- Total tickets used
+- Total profit
+- Number of active accounts
+
+If no credentials are provided, the bot will run normally without sending notifications.
+
 ## Usage
 
 1. Create a file named `query.txt` in the same directory as the bot
@@ -58,6 +78,7 @@ The bot has several features accessible through a menu system:
 - Set minimum and maximum points
 - Configure number of threads
 - Automated gameplay
+- Telegram notifications for farming summary
 
 ### 2. Check Account Info
 - View account balance
@@ -119,7 +140,6 @@ This is free Api, but if you need private api key dm me
     <img src="https://img.shields.io/badge/@ggtogss-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
   </a>
 </div>
-
 
 ## Author
 
