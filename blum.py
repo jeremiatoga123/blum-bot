@@ -293,6 +293,8 @@ def generate_payload(game_id, clover_amount, dogs_eligible=False, max_retries=3,
         "gameId": game_id,
         "points": clover_amount
     }
+    
+    dogs = None
 
     if dogs_eligible:
         dogs = str(random.randint(5, 10) * 0.1)
@@ -548,6 +550,8 @@ def process_query(query):
                 run_config['max_clover']
             ))
             print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
+            print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
+            print(f"[{username}] : {CYAN}Claiming game...{RESET}")
 
             payload = generate_payload(game_id, clover_amount, dogs_eligible)
             if not payload:
