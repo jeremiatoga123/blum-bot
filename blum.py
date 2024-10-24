@@ -587,8 +587,6 @@ def process_query(query):
                 
                 
                 print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
-                if current_dogs > 0:
-                    print(f"[{username}] : {GREEN}Dogs earned this game: {current_dogs}{RESET}")
                 print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
                 print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
             else:
