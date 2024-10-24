@@ -84,6 +84,8 @@ bot_token = os.getenv('TELEGRAM_BOT_TOKEN', None)
 chat_id = os.getenv('TELEGRAM_CHAT_ID', None)
 
 def send_telegram_message(bot_token, chat_id, message):
+    if not bot_token or not chat_id:
+        return  
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -96,12 +98,13 @@ def send_telegram_message(bot_token, chat_id, message):
         if response.status_code == 200:
             print(f"{GREEN}Message sent to Telegram{RESET}")
     except requests.RequestException as e:
-        print(f"{YELLOW}Telegram notification disabled or failed{RESET}")
+        print(f"{YELLOW}Telegram notification disabled or failed: {e}{RESET}")
 
 def send_farming_summary(bot_token, chat_id, farming_data):
     """Send farming summary to Telegram if credentials are available"""
     if not bot_token or not chat_id:
         print(f"{YELLOW}Telegram notifications disabled. No bot_token or chat_id provided.{RESET}")
+        return
 
     total_points = farming_data['total_points']
     total_tickets = farming_data['total_tickets']
@@ -568,7 +571,7 @@ def process_query(query):
                 game_profit = calculate_profit(current_balance, final_balance)
                 account_profit += game_profit
                 account_games_played += 1
-                current_dogs = payload_data.get("dogs", 0) if dogs_eligible else 0
+                current_dogs = payload.get("dogs", 0) if dogs_eligible else 0
                 
                 update_farming_stats(
                     username=username,
