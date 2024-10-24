@@ -120,7 +120,7 @@ def send_farming_summary(bot_token, chat_id, farming_data):
         f"⏱️ Duration: <code>{duration:.2f} hours</code>\n\n"
         f"📊 <b>FARMING STATS</b>\n"
         f"🎯 Total Points: <code>{total_points:,}</code>\n"
-        f"🦴 Total Dogs: <code>{total_dogs:.1f}</code>\n"  # Tambah total dogs
+        f"🦴 Total Dogs: <code>{total_dogs:.1f}</code>\n"  
         f"🎟️ Tickets Used: <code>{total_tickets}</code>\n"
         f"💰 Total Profit: <code>{total_profit:,.2f}</code>\n\n"
         f"👥 <b>ACCOUNTS INFO</b>\n"
@@ -129,9 +129,8 @@ def send_farming_summary(bot_token, chat_id, farming_data):
     
     send_telegram_message(bot_token, chat_id, message)
 
-def update_farming_stats(username, points, tickets, profit, dogs=0):  # Tambah parameter dogs
+def update_farming_stats(username, points, tickets, profit, dogs=0):  
     """Update farming statistics"""
-    # Cek apakah username sudah ada
     user_exists = False
     for acc in farming_summary['active_accounts']:
         if acc['username'] == username:
@@ -140,13 +139,11 @@ def update_farming_stats(username, points, tickets, profit, dogs=0):  # Tambah p
                 point_difference = float(points) - acc['last_points']
                 farming_summary['total_points'] += point_difference
             acc['last_points'] = float(points)
-            # Track dogs untuk user ini
             if 'total_dogs' not in acc:
                 acc['total_dogs'] = 0
             acc['total_dogs'] += dogs
             break
 
-    # Jika user baru
     if not user_exists:
         farming_summary['active_accounts'].append({
             'username': username,
