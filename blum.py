@@ -85,7 +85,7 @@ chat_id = os.getenv('TELEGRAM_CHAT_ID', None)
 
 def send_telegram_message(bot_token, chat_id, message):
     if not bot_token or not chat_id:
-        return  
+        return
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -98,7 +98,7 @@ def send_telegram_message(bot_token, chat_id, message):
         if response.status_code == 200:
             print(f"{GREEN}Message sent to Telegram{RESET}")
     except requests.RequestException as e:
-        print(f"{YELLOW}Telegram notification disabled or failed: {e}{RESET}")
+        print(f"{YELLOW}Telegram notification disabled or failed{RESET}")
 
 def send_farming_summary(bot_token, chat_id, farming_data):
     """Send farming summary to Telegram if credentials are available"""
