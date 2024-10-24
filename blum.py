@@ -307,7 +307,7 @@ def generate_payload(game_id, clover_amount, dogs_eligible=False, max_retries=3,
             if response.status_code == 200:
                 response_json = response.json()
                 if 'payload' in response_json:
-                    return response_json['payload']
+                    return response_json['payload'], dogs
                 else:
                     print(f"{YELLOW}Attempt {attempt + 1}: Response does not contain 'payload'{RESET}")
             else:
