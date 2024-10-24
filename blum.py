@@ -547,12 +547,13 @@ def process_query(query):
                 run_config['max_clover']
             ))
 
-            payload, dogs = generate_payload(game_id, clover_amount, dogs_eligible)
-            if not payload:
+            result = generate_payload(game_id, clover_amount, dogs_eligible)
+            if result is None or result[0] is None: 
                 print(f"[{username}] : {RED}Payload generation failed. Stopping game process.{RESET}")
                 should_exit = True
                 break
 
+            payload, dogs = result  
             print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
             if dogs_eligible:
                 print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
