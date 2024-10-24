@@ -549,15 +549,17 @@ def process_query(query):
                 run_config['min_clover'], 
                 run_config['max_clover']
             ))
-            print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
-            print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
-            print(f"[{username}] : {CYAN}Claiming game...{RESET}")
 
             payload, dogs = generate_payload(game_id, clover_amount, dogs_eligible)
             if not payload:
                 print(f"[{username}] : {RED}Payload generation failed. Stopping game process.{RESET}")
                 should_exit = True
                 break
+
+            print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
+            if dogs_eligible:
+                print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
+            print(f"[{username}] : {CYAN}Claiming game...{RESET}")
                 
             success = claim_game(bearer, payload)
             if not success:
