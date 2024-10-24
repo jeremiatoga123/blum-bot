@@ -553,7 +553,7 @@ def process_query(query):
             print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
             print(f"[{username}] : {CYAN}Claiming game...{RESET}")
 
-            payload = generate_payload(game_id, clover_amount, dogs_eligible)
+            payload, dogs = generate_payload(game_id, clover_amount, dogs_eligible)
             if not payload:
                 print(f"[{username}] : {RED}Payload generation failed. Stopping game process.{RESET}")
                 should_exit = True
