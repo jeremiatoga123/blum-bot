@@ -575,17 +575,20 @@ def process_query(query):
                 game_profit = calculate_profit(current_balance, final_balance)
                 account_profit += game_profit
                 account_games_played += 1
-                current_dogs = payload.get("dogs", 0) if dogs_eligible else 0
+                current_dogs = float(dogs) if dogs_eligible and dogs is not None else 0
                 
                 update_farming_stats(
                     username=username,
                     points=float(final_balance.get('availableBalance', '0')),
                     tickets=1,
                     profit=game_profit,
-                    dogs=float(current_dogs) if current_dogs else 0  
+                    dogs=current_dogs
                 )
-
+                
+                
                 print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
+                if current_dogs > 0:
+                    print(f"[{username}] : {GREEN}Dogs earned this game: {current_dogs}{RESET}")
                 print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
                 print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
             else:
