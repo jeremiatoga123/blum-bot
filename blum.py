@@ -508,6 +508,9 @@ def process_query(query):
     initial_balance = get_balance(bearer)
     if not initial_balance:
         return f"{RED}Failed to get current balance for {username}{RESET}"
+    elif 'availableBalance' in initial_balance:
+        print(f"[{username}] : {CYAN}Balance : {initial_balance['availableBalance']}{RESET}")
+        print(f"[{username}] : {CYAN}Available Ticket : {initial_balance.get('playPasses', 0)}{RESET}")
 
     while not should_exit:
         try:
