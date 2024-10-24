@@ -1,5 +1,6 @@
 # Blum Bot
 A bot for automation with multi-threading capabilities.
+Automatically check accounts if eligible auto getting some dogs.
 
 ## Getting Started
 

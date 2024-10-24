@@ -112,12 +112,15 @@ def send_farming_summary(bot_token, chat_id, farming_data):
     active_accounts = len(farming_data['active_accounts'])
     duration = farming_data['duration']
     
+    total_dogs = sum(acc.get('total_dogs', 0) for acc in farming_data['active_accounts'])
+    
     message = (
         "🤖 <b>BLUM BOT FARMING SUMMARY</b>\n"
         "═══════════════════════\n\n"
         f"⏱️ Duration: <code>{duration:.2f} hours</code>\n\n"
         f"📊 <b>FARMING STATS</b>\n"
         f"🎯 Total Points: <code>{total_points:,}</code>\n"
+        f"🦴 Total Dogs: <code>{total_dogs:.1f}</code>\n"  # Tambah total dogs
         f"🎟️ Tickets Used: <code>{total_tickets}</code>\n"
         f"💰 Total Profit: <code>{total_profit:,.2f}</code>\n\n"
         f"👥 <b>ACCOUNTS INFO</b>\n"
@@ -126,12 +129,32 @@ def send_farming_summary(bot_token, chat_id, farming_data):
     
     send_telegram_message(bot_token, chat_id, message)
 
-def update_farming_stats(username, points, tickets, profit):
+def update_farming_stats(username, points, tickets, profit, dogs=0):  # Tambah parameter dogs
     """Update farming statistics"""
-    if username not in [acc['username'] for acc in farming_summary['active_accounts']]:
-        farming_summary['active_accounts'].append({'username': username})
-        farming_summary['total_points'] = int(points) 
-    
+    # Cek apakah username sudah ada
+    user_exists = False
+    for acc in farming_summary['active_accounts']:
+        if acc['username'] == username:
+            user_exists = True
+            if 'last_points' in acc:
+                point_difference = float(points) - acc['last_points']
+                farming_summary['total_points'] += point_difference
+            acc['last_points'] = float(points)
+            # Track dogs untuk user ini
+            if 'total_dogs' not in acc:
+                acc['total_dogs'] = 0
+            acc['total_dogs'] += dogs
+            break
+
+    # Jika user baru
+    if not user_exists:
+        farming_summary['active_accounts'].append({
+            'username': username,
+            'last_points': float(points),
+            'total_dogs': dogs
+        })
+        farming_summary['total_points'] += float(points)
+
     farming_summary['total_tickets'] += tickets
     farming_summary['total_profit'] += profit
     farming_summary['duration'] = (time.time() - farming_summary['start_time']) / 3600
@@ -171,6 +194,36 @@ def auth(query, retries=3, delay=2):
             time.sleep(delay)
     
     return None
+
+def refresh_token(refresh_token):
+    url = "https://user-domain.blum.codes/api/v1/auth/refresh"
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "origin": "https://telegram.blum.codes",
+        "priority": "u=1, i",
+        "referer": "https://telegram.blum.codes/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
+
+    data = { 'refresh': refresh_token }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"{RED}Refresh failed!{RESET}")
+            print(f"Response: {response.text}")
+            return None
+    except requests.RequestException as e:
+        print(f"{RED}Error during refresh: {e}{RESET}")
+        return None
 
 def get_headers(access_token=None):
     headers = {
@@ -234,12 +287,16 @@ def play_game(access_token, username, retries=3, delay=2):
             time.sleep(delay)
     return None, None
 
-def generate_payload(game_id, clover_amount, max_retries=3, delay=2):
+def generate_payload(game_id, clover_amount, dogs_eligible=False, max_retries=3, delay=2):
     global should_exit
     payload_data = {
         "gameId": game_id,
-        "cloverAmount": clover_amount
+        "points": clover_amount
     }
+
+    if dogs_eligible:
+        dogs = str(random.randint(5, 10) * 0.1)
+        payload_data["dogs"] = dogs
     
     for attempt in range(max_retries):
         try:
@@ -321,7 +378,7 @@ def simple_countdown(seconds, username):
 
 def get_clover_amount():
     print("\nClover Amount Settings")
-    print(f"Note: The points entered will be selected randomly, default points 200, maximum is 280 (several account got 324)\n{RESET}")
+    print(f"Note: The points entered will be selected randomly, default points 200, maximum is 280 (some account got 324)\n{RESET}")
     try:
         min_amount = int(input(f"{GREEN}Enter minimum points   : {RESET}"))
         max_amount = int(input(f"{GREEN}Enter maximum points   : {RESET}"))
@@ -331,6 +388,36 @@ def get_clover_amount():
     except ValueError:
         print(f"{RED}Input must be a number! Using default (200){RESET}")
         return 200, 200
+
+
+def check_dogs_drop_eligibility(access_token, retries=3, delay=2):
+    url = "https://game-domain.blum.codes/api/v2/game/eligibility/dogs_drop"
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "origin": "https://telegram.blum.codes",
+        "priority": "u=1, i",
+        "authorization": f"Bearer {access_token}",
+        "referer": "https://telegram.blum.codes/",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+    }
+    
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException:
+            pass
+        
+        if attempt < retries - 1:
+            time.sleep(delay)
+    
+    return None
 
 def daily_reward(access_token, retries=3, delay=2):
     url = f"https://game-domain.blum.codes/api/v1/daily-reward?offset=-420"
@@ -381,76 +468,137 @@ def process_query(query):
         return f"{RED}Failed to authenticate for query: {query}{RESET}"
 
     username = auth_response['token']['user']['username']
+    refresh_token_str = auth_response['token']['refresh']
     bearer = auth_response['token']['access']
+
+    def refresh_auth():
+        nonlocal bearer, refresh_token_str
+        try:
+            refresh_response = refresh_token(refresh_token_str)
+            if refresh_response and 'token' in refresh_response:
+                bearer = refresh_response['token']['access']
+                refresh_token_str = refresh_response['token']['refresh']
+                print(f"[{username}] : {GREEN}Successfully refreshed token{RESET}")
+                return True
+            
+            print(f"[{username}] : {YELLOW}Refresh token failed, trying full re-authentication...{RESET}")
+            new_auth_response = auth(query)
+            if new_auth_response and 'token' in new_auth_response:
+                bearer = new_auth_response['token']['access']
+                refresh_token_str = new_auth_response['token']['refresh']
+                return True
+            return False
+        except Exception as e:
+            print(f"[{username}] : {RED}Failed to refresh authentication: {e}{RESET}")
+            return False
 
     account_profit = 0
     account_games_played = 0
-    account_points = 0  
+    account_points = 0 
+
+    dogs_eligible = False
+    try:
+        eligibility_response = check_dogs_drop_eligibility(bearer)
+        if eligibility_response:  
+            dogs_eligible = eligibility_response.get('eligible', False) 
+            print(f"[{username}] : {CYAN}Dogs eligibility: {GREEN if dogs_eligible else RED}{dogs_eligible}{RESET}")
+    except Exception as e:
+        print(f"[{username}] : {RED}Failed to check dogs eligibility: {e}{RESET}")
 
     initial_balance = get_balance(bearer)
     if not initial_balance:
         return f"{RED}Failed to get current balance for {username}{RESET}"
 
     while not should_exit:
-        current_balance = get_balance(bearer)
-        if not current_balance:
-            return f"{RED}Failed to get current balance for {username}{RESET}"
+        try:
+            current_balance = get_balance(bearer)
+            if not current_balance:
+                print(f"[{username}] : {YELLOW}Token might be expired, trying to refresh...{RESET}")
+                if not refresh_auth():
+                    return f"{RED}Failed to refresh authentication. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
+                current_balance = get_balance(bearer)
+                if not current_balance:
+                    return f"{RED}Failed to get balance even after token refresh{RESET}"
 
-        play_passes = int(current_balance.get('playPasses', 0))
-        available_balance = float(current_balance.get('availableBalance', '0'))
-        if play_passes <= 0:
-            update_farming_stats(
-                username=username,
-                points=int(available_balance),
-                tickets=0,
-                profit=0
-            )
-            return f"{YELLOW}No more Ticket available for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
+            play_passes = int(current_balance.get('playPasses', 0))
+            available_balance = float(current_balance.get('availableBalance', '0'))
+            if play_passes <= 0:   
+                return f"{YELLOW}No more Ticket available for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
-        print(f"[{username}] : {CYAN}Available Balance: {available_balance}{RESET}")
-        print(f"[{username}] : {CYAN}Remaining Ticket: {play_passes}{RESET}")
+            print(f"[{username}] : {CYAN}Available Balance: {available_balance}{RESET}")
+            print(f"[{username}] : {CYAN}Remaining Ticket: {play_passes}{RESET}")
 
-        game_id, assets = play_game(bearer, username)
-        if not game_id:
-            return f"{RED}Failed to start the game for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
-        
-        simple_countdown(30, username)  
-        if should_exit:
-            break
-
-        clover_amount = str(random.randint(
-            run_config['min_clover'], 
-            run_config['max_clover']
-        ))
-        print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
-
-        payload = generate_payload(game_id, clover_amount)
-        if not payload:
-            should_exit = True 
-            raise Exception("Payload generation failed") 
+            game_id, assets = play_game(bearer, username)
+            if not game_id:
+                if not refresh_auth():
+                    return f"{RED}Failed to refresh authentication{RESET}"
+                game_id, assets = play_game(bearer, username)
+                if not game_id:
+                    return f"{RED}Failed to start game even after token refresh{RESET}"
             
-        success = claim_game(bearer, payload)
-        if success:
-            print(f"[{username}] : {GREEN}Game claimed successfully{RESET}")
-        else:
-            print(f"{YELLOW}[{username}] Failed to claim game after multiple attempts. Skipping...{RESET}")
-            continue
+            simple_countdown(30, username)  
+            if should_exit:
+                break
 
-        final_balance = get_balance(bearer)
-        if final_balance:
-            game_profit = calculate_profit(current_balance, final_balance)
-            account_profit += game_profit
-            account_games_played += 1
-            print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
-            print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
-            print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
-        else:
-            print(f"[{username}] : {RED}Failed to get final balance.{RESET}")
+            clover_amount = str(random.randint(
+                run_config['min_clover'], 
+                run_config['max_clover']
+            ))
+            print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
 
-        print(f"[{username}] : {CYAN}Waiting 3 seconds before next game...{RESET}")
-        simple_countdown(3, username) 
-        if should_exit:
-            break
+            payload = generate_payload(game_id, clover_amount, dogs_eligible)
+            if not payload:
+                print(f"[{username}] : {RED}Payload generation failed. Stopping game process.{RESET}")
+                should_exit = True
+                break
+                
+            success = claim_game(bearer, payload)
+            if not success:
+                if not refresh_auth():
+                    return f"{RED}Failed to refresh authentication{RESET}"
+                success = claim_game(bearer, payload)
+                if not success:
+                    print(f"{YELLOW}Failed to claim game even after token refresh. Skipping...{RESET}")
+                    continue
+            else:
+                print(f"[{username}] : {GREEN}Game claimed successfully!{RESET}")
+
+            final_balance = get_balance(bearer)
+            if final_balance:
+                game_profit = calculate_profit(current_balance, final_balance)
+                account_profit += game_profit
+                account_games_played += 1
+                current_dogs = payload_data.get("dogs", 0) if dogs_eligible else 0
+                
+                update_farming_stats(
+                    username=username,
+                    points=float(final_balance.get('availableBalance', '0')),
+                    tickets=1,
+                    profit=game_profit,
+                    dogs=float(current_dogs) if current_dogs else 0  
+                )
+
+                print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
+                print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
+                print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
+            else:
+                print(f"[{username}] : {RED}Failed to get final balance.{RESET}")
+
+            print(f"[{username}] : {CYAN}Waiting 3 seconds before next game...{RESET}")
+            simple_countdown(3, username) 
+            if should_exit:
+                break
+
+        except Exception as e:
+            if "unauthorized" in str(e).lower() or "token expired" in str(e).lower():
+                print(f"[{username}] : {YELLOW}Token error detected. Trying to refresh...{RESET}")
+                if not refresh_auth():
+                    return f"{RED}Failed to refresh authentication. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
+                continue
+            else:
+                print(f"[{username}] : {RED}Error during game process: {e}. Stopping game process.{RESET}")
+                should_exit = True
+                break
 
     return f"{CYAN}Account {username} finished. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
