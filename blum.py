@@ -96,7 +96,9 @@ def send_telegram_message(bot_token, chat_id, message):
         response = requests.post(url, json=payload)
         response.raise_for_status()
         if response.status_code == 200:
-            print(f"{GREEN}Message sent to Telegram{RESET}")
+            print(f"{CYAN}{'='*52}{RESET}")
+            print(f"{GREEN}Notification sent to Telegram{RESET}")
+            print(f"{CYAN}{'='*52}{RESET}")
     except requests.RequestException as e:
         print(f"{YELLOW}Telegram notification disabled or failed{RESET}")
 
@@ -135,10 +137,7 @@ def update_farming_stats(username, points, tickets, profit, dogs=0):
     for acc in farming_summary['active_accounts']:
         if acc['username'] == username:
             user_exists = True
-            if 'last_points' in acc:
-                point_difference = float(points) - acc['last_points']
-                farming_summary['total_points'] += point_difference
-            acc['last_points'] = float(points)
+            acc['last_points'] = float(points)  # Selalu update last_points
             if 'total_dogs' not in acc:
                 acc['total_dogs'] = 0
             acc['total_dogs'] += dogs
@@ -150,8 +149,8 @@ def update_farming_stats(username, points, tickets, profit, dogs=0):
             'last_points': float(points),
             'total_dogs': dogs
         })
-        farming_summary['total_points'] += float(points)
 
+    farming_summary['total_points'] = sum(float(acc['last_points']) for acc in farming_summary['active_accounts'])
     farming_summary['total_tickets'] += tickets
     farming_summary['total_profit'] += profit
     farming_summary['duration'] = (time.time() - farming_summary['start_time']) / 3600
@@ -274,7 +273,7 @@ def play_game(access_token, username, retries=3, delay=2):
                 game_id = response_json.get("gameId")
                 assets = response_json.get("assets")
                 if game_id and assets:
-                    print(f"[{username}]{CYAN} : Game started. ID: {GREEN}{game_id}{RESET}")
+                    print(f"[{username}] : {CYAN}Game started. ID: {GREEN}{game_id}{RESET}")
                     return game_id, assets
             else:
                 print(f"[{username}] : {YELLOW}Failed to start game. Status: {response.status_code}{RESET}")
@@ -457,7 +456,7 @@ def daily_reward(access_token, retries=3, delay=2):
     
     return None
     
-def process_query(query):
+def play_process(query):
     global should_exit
     if should_exit:
         return None
@@ -507,9 +506,20 @@ def process_query(query):
     initial_balance = get_balance(bearer)
     if not initial_balance:
         return f"{RED}Failed to get current balance for {username}{RESET}"
+
     elif 'availableBalance' in initial_balance:
+        update_farming_stats(
+            username=username,
+            points=float(initial_balance.get('availableBalance', '0')),
+            tickets=0,
+            profit=0,
+            dogs=0
+        )
         print(f"[{username}] : {CYAN}Balance : {initial_balance['availableBalance']}{RESET}")
         print(f"[{username}] : {CYAN}Available Ticket : {initial_balance.get('playPasses', 0)}{RESET}")
+
+    if int(initial_balance.get('playPasses', 0)) <= 0:
+        print(f"[{username}] : {YELLOW}No More Ticket available{RESET}")
 
     while not should_exit:
         try:
@@ -610,13 +620,131 @@ def process_query(query):
 
     return f"{CYAN}Account {username} finished. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
+def play_game_and_daily(query):
+    auth_response  = auth(query)
+    if not auth_response or 'token' not in auth_response or 'access' not in auth_response['token']:
+        return f"{RED}Failed to authenticate for query: {query}{RESET}"
+    
+    username = auth_response['token']['user']['username']
+    bearer = auth_response['token']['access']
+    
+    print(f"[{username}] : {CYAN}Checking daily...{RESET}")
+    daily_reward_response = daily_reward(bearer)
+    if daily_reward_response:
+        if "message" in daily_reward_response and "same day" in daily_reward_response["message"].lower():
+            print(f"[{username}] : {YELLOW}Daily reward already claimed today{RESET}")
+        elif "message" in daily_reward_response and "OK" in daily_reward_response["message"]:
+            print(f"[{username}] : {GREEN}Daily reward successfully claimed!{RESET}")
+    else:
+        print(f"[{username}] : {RED}Failed to claim daily reward{RESET}")
+
+    return play_process(query)
+
+def auto_loop_process(queries):
+    global should_exit, farming_summary
+
+    print(f"{CYAN}{'='*52}{RESET}")
+    if bot_token and chat_id:
+        print(f"{YELLOW}Telegram notifications Enabled{RESET}")
+    else:
+        print(f"{YELLOW}Telegram notifications Disabled{RESET}")
+
+    # Meminta input clover dan thread sekali di awal
+    min_points, max_points = get_clover_amount()
+    run_config['min_clover'] = min_points
+    run_config['max_clover'] = max_points
+    print(f"{GREEN}Range points to be used : {RESET}{min_points} - {max_points}")
+    
+    try:
+        num_threads = int(input(f"\nEnter the number of threads to use : {RESET}"))
+        print(f"\n{BLUE}Starting process with {num_threads} threads\n{RESET}")
+    except ValueError:
+        print(f"{RED}Thread input must be a number! Using defaults (1){RESET}")
+        num_threads = 1
+
+    # Loop utama
+    while not should_exit:
+        try:
+            farming_summary = {
+                'total_points': 0,
+                'total_tickets': 0,
+                'total_profit': 0,
+                'active_accounts': [],
+                'start_time': time.time(),
+                'duration': 0
+            }
+            with ThreadPoolExecutor(max_workers=num_threads) as executor:
+                future_to_query = {executor.submit(play_process, query): query for query in queries}
+                completed_accounts = 0
+                total_accounts = len(queries)
+                try:
+                    while future_to_query:
+                        if should_exit:
+                            break
+                        done, not_done = concurrent.futures.wait(
+                            future_to_query, timeout=0.1,
+                            return_when=concurrent.futures.FIRST_COMPLETED
+                        )
+                        for future in done:
+                            query = future_to_query[future]
+                            try:
+                                result = future.result(timeout=60)
+                                completed_accounts += 1
+                                if completed_accounts == total_accounts:
+                                    send_farming_summary(bot_token, chat_id, farming_summary)
+                                if should_exit:  
+                                    raise Exception("Payload server is down")
+                            except TimeoutError:
+                                print(f"{RED}Timeout: {query}{RESET}")
+                            except Exception as e:
+                                for f in not_done:
+                                    f.cancel()
+                                executor.shutdown(wait=False)
+                                should_exit = False  
+                                return  
+                                print(f"\n{RED}Error detected. Stopping all processes...{RESET}")
+                            del future_to_query[future]
+                        if should_exit:
+                            break
+                except KeyboardInterrupt:
+                    should_exit = True
+                finally:
+                    for future in future_to_query:
+                        future.cancel()
+                    executor.shutdown(wait=False)
+                    
+            if not should_exit:
+                print(f"\n{CYAN}Play game completed. Waiting 5 hours before next game...{RESET}")
+                for remaining in range(180000, 0, -1):
+                    if should_exit:
+                        break
+                    hours = remaining // 3600
+                    minutes = (remaining % 3600) // 60
+                    seconds = remaining % 60
+                    print(f"Next game in: {hours:02d}:{minutes:02d}:{seconds:02d}", end='\r')
+                    time.sleep(1)
+                print("\n")
+
+        except KeyboardInterrupt:
+            should_exit = True
+        except Exception as e:
+            print(f"{RED}Error in auto loop: {e}{RESET}")
+            if not should_exit:
+                print(f"{YELLOW}Restarting loop in 5 minutes...{RESET}")
+                time.sleep(300)
+            else:
+                break
+
+    print(f"{YELLOW}Auto loop stopped{RESET}")
+
 def show_menu():
     print(f"\n{CYAN}Menu Options:{RESET}")
-    print(f"1. Play Game{RESET}")
-    print(f"2. Check Account Info{RESET}")
-    print(f"3. Check Daily Reward{RESET}")
-    print(f"4. Exit{RESET}")
-    return input(f"\n{GREEN}Choose option (1-4): {RESET}")
+    print(f"1. Play Game Eevery 5 Hours")
+    print(f"2. Play Game")
+    print(f"3. Check Account Info")
+    print(f"4. Check Daily Reward")
+    print(f"5. Exit")
+    return input(f"\n{GREEN}Choose option (1-5): {RESET}")
 
 def check_account_info(query):
     auth_response = auth(query)
@@ -661,8 +789,14 @@ def main():
 
         while True:
             choice = show_menu()
-            
             if choice == '1':
+                try:
+                    auto_loop_process(queries)
+                except KeyboardInterrupt:
+                    should_exit = True
+
+            if choice == '2':
+                print(f"{CYAN}{'='*52}{RESET}")
                 if bot_token and chat_id:
                     print(f"{YELLOW}\nTelegram notifications Enabled{RESET}")
                 else:
@@ -689,7 +823,7 @@ def main():
                     print(f"{RED}Thread input must be a number! Using defaults (1){RESET}")
                     num_threads = 1
                 with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                    future_to_query = {executor.submit(process_query, query): query for query in queries}
+                    future_to_query = {executor.submit(play_process, query): query for query in queries}
                     completed_accounts = 0
                     total_accounts = len(queries)
                     try:
@@ -728,7 +862,7 @@ def main():
                             future.cancel()
                         executor.shutdown(wait=False)
             
-            elif choice == '2':
+            elif choice == '3':
                 try:
                     print(f"\n{CYAN}Checking account information...{RESET}")
                     for query in queries:
@@ -736,7 +870,7 @@ def main():
                 except KeyboardInterrupt:
                     signal_handler(signal.SIGINT, None)
             
-            elif choice == '3':
+            elif choice == '4':
                 try:
                     print(f"\n{CYAN}{'='*52}{RESET}")
                     print(f"Daily Reward Check")
@@ -771,12 +905,12 @@ def main():
                 except Exception as e:
                     print(f"{RED}An error occurred while checking daily rewards: {str(e)}{RESET}")
             
-            elif choice == '4':
+            elif choice == '5':
                 print(f"\n{YELLOW}Exiting program...{RESET}")
                 break
             
             else:
-                print(f"\n{RED}Invalid option! Please choose 1-3{RESET}")
+                print(f"\n{RED}Invalid option! Please choose 1-5{RESET}")
 
     except Exception as e:
         print(f"{RED}An unexpected error occurred: {e}{RESET}")
