@@ -2,6 +2,46 @@
 A bot for automation with multi-threading capabilities.
 Automatically check accounts if eligible auto getting some dogs.
 
+## Update Menu Options
+
+### 1. Play Game Every 5 Hours
+- Automated gameplay that runs in cycles
+- Each cycle includes:
+  - Daily reward checking and claiming
+  - Automatic Farming Balance
+  - Automatic game play for all accounts
+  - Waiting period of 5 hours before next cycle
+- Perfect for long-term farming
+- Single input for points and threads at start
+- Continues until manually stopped (Ctrl+C)
+- Telegram notifications for each cycle completion
+
+### 2. Play Game (One Time)
+- Single session gameplay
+- Play until all tickets are used
+- Stops automatically when complete
+- Needs manual restart for new session
+- Fresh input for points and threads each time
+- Good for short-term or controlled farming
+- Telegram notification on completion
+
+The main difference:
+- "Play Game Every 5 Hours" is designed for automated, long-term farming with minimal user intervention
+- Regular "Play Game" is for single-session farming that requires manual restart
+- Both features support multi-threading and Telegram notifications, but differ in automation level
+
+Choose "Play Game Every 5 Hours" if you want:
+- Continuous farming with automatic cycles
+- Daily reward automation
+- Minimal manual intervention
+- Long-term operation
+
+Choose "Play Game" if you want:
+- More control over each session
+- Single-run operations
+- Manual management of play sessions
+- Short-term farming
+
 ## Getting Started
 
 First, join Blum by clicking here:
