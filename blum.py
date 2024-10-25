@@ -137,7 +137,7 @@ def update_farming_stats(username, points, tickets, profit, dogs=0):
     for acc in farming_summary['active_accounts']:
         if acc['username'] == username:
             user_exists = True
-            acc['last_points'] = float(points)  # Selalu update last_points
+            acc['last_points'] = float(points) 
             if 'total_dogs' not in acc:
                 acc['total_dogs'] = 0
             acc['total_dogs'] += dogs
@@ -703,7 +703,6 @@ def auto_loop_process(queries):
     else:
         print(f"{YELLOW}Telegram notifications Disabled{RESET}")
 
-    # Meminta input clover dan thread sekali di awal
     min_points, max_points = get_clover_amount()
     run_config['min_clover'] = min_points
     run_config['max_clover'] = max_points
@@ -716,7 +715,6 @@ def auto_loop_process(queries):
         print(f"{RED}Thread input must be a number! Using defaults (1){RESET}")
         num_threads = 1
 
-    # Loop utama
     while not should_exit:
         try:
             farming_summary = {
