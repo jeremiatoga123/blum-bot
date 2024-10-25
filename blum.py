@@ -273,7 +273,7 @@ def play_game(access_token, username, retries=3, delay=2):
                 game_id = response_json.get("gameId")
                 assets = response_json.get("assets")
                 if game_id and assets:
-                    print(f"[{username}] : {CYAN}Game started. ID: {GREEN}{game_id}{RESET}")
+                    print(f"[{username}] : {CYAN}Game started. ID : {GREEN}{game_id}{RESET}")
                     return game_id, assets
             else:
                 print(f"[{username}] : {YELLOW}Failed to start game. Status: {response.status_code}{RESET}")
@@ -537,8 +537,8 @@ def play_process(query):
             if play_passes <= 0:   
                 return f"{YELLOW}No more Ticket available for {username}. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
-            print(f"[{username}] : {CYAN}Available Balance: {available_balance}{RESET}")
-            print(f"[{username}] : {CYAN}Remaining Ticket: {play_passes}{RESET}")
+            print(f"[{username}] : {CYAN}Available Balance : {available_balance}{RESET}")
+            print(f"[{username}] : {CYAN}Remaining Ticket : {play_passes}{RESET}")
 
             game_id, assets = play_game(bearer, username)
             if not game_id:
@@ -564,9 +564,9 @@ def play_process(query):
                 break
 
             payload, dogs = result  
-            print(f"[{username}] : {CYAN}Using clover amount: {clover_amount}{RESET}")
+            print(f"[{username}] : {CYAN}Using clover amount : {clover_amount}{RESET}")
             if dogs_eligible:
-                print(f"[{username}] : {CYAN}Using dogs amount: {dogs}{RESET}")
+                print(f"[{username}] : {CYAN}Using dogs amount : {dogs}{RESET}")
             print(f"[{username}] : {CYAN}Claiming game...{RESET}")
                 
             success = claim_game(bearer, payload)
@@ -596,9 +596,9 @@ def play_process(query):
                 )
                 
                 
-                print(f"[{username}] : {GREEN}Profit from this game: {game_profit}{RESET}")
-                print(f"[{username}] : {GREEN}Account profit so far: {account_profit}{RESET}")
-                print(f"[{username}] : {GREEN}Account games played: {account_games_played}{RESET}")
+                print(f"[{username}] : {GREEN}Profit from this game : {game_profit}{RESET}")
+                print(f"[{username}] : {GREEN}Account profit so far : {account_profit}{RESET}")
+                print(f"[{username}] : {GREEN}Account games played : {account_games_played}{RESET}")
             else:
                 print(f"[{username}] : {RED}Failed to get final balance.{RESET}")
 
@@ -620,6 +620,36 @@ def play_process(query):
 
     return f"{CYAN}Account {username} finished. Total profit: {account_profit}, Games played: {account_games_played}{RESET}"
 
+def claim_farming(access_token, retries=3, delay=2):
+    url = "https://game-domain.blum.codes/api/v1/farming/claim"
+    headers = get_headers(access_token)
+    
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, headers=headers)
+            response_json = response.json()
+            return response_json
+        except (requests.RequestException, ValueError) as e:
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                return None
+
+def start_farming(access_token, retries=3, delay=2):
+    url = "https://game-domain.blum.codes/api/v1/farming/start"
+    headers = get_headers(access_token)
+    
+    for attempt in range(retries):
+        try:
+            response = requests.post(url, headers=headers)
+            response_json = response.json()
+            return response_json
+        except (requests.RequestException, ValueError) as e:
+            if attempt < retries - 1:
+                time.sleep(delay)
+            else:
+                return None
+
 def play_game_and_daily(query):
     auth_response  = auth(query)
     if not auth_response or 'token' not in auth_response or 'access' not in auth_response['token']:
@@ -627,7 +657,31 @@ def play_game_and_daily(query):
     
     username = auth_response['token']['user']['username']
     bearer = auth_response['token']['access']
-    
+
+    print(f"[{username}] : {CYAN}Claiming farming rewards...{RESET}")
+    claim_response = claim_farming(bearer)
+    if "message" in claim_response and "It's too early to claim":
+        print(f"[{username}] : {YELLOW}Already Claimed{RESET}")
+    else:
+        print(f"[{username}] : {GREEN}Farming Claimed!{RESET}")
+
+    print(f"[{username}] : {CYAN}Starting farming...{RESET}")
+    start_response = start_farming(bearer)
+    if start_response:
+        if "endTime" in start_response:
+            current_time_ms = int(time.time() * 1000)
+            remaining_ms = start_response["endTime"] - current_time_ms
+            
+            if remaining_ms > 0:
+                hours = remaining_ms // (1000 * 60 * 60)
+                minutes = (remaining_ms % (1000 * 60 * 60)) // (1000 * 60)
+                seconds = (remaining_ms % (1000 * 60)) // 1000
+                print(f"[{username}] : {YELLOW}Farming Already Started, {hours:02d}:{minutes:02d}:{seconds:02d} Remaining Until Claim{RESET}")
+            else:
+                print(f"[{username}] : {GREEN}Farming Ready to Claim!{RESET}")
+        else:
+            print(f"[{username}] : {GREEN}Farming started!{RESET}")
+
     print(f"[{username}] : {CYAN}Checking daily...{RESET}")
     daily_reward_response = daily_reward(bearer)
     if daily_reward_response:
@@ -674,7 +728,7 @@ def auto_loop_process(queries):
                 'duration': 0
             }
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                future_to_query = {executor.submit(play_process, query): query for query in queries}
+                future_to_query = {executor.submit(play_game_and_daily, query): query for query in queries}
                 completed_accounts = 0
                 total_accounts = len(queries)
                 try:
@@ -736,6 +790,7 @@ def auto_loop_process(queries):
                 break
 
     print(f"{YELLOW}Auto loop stopped{RESET}")
+
 
 def show_menu():
     print(f"\n{CYAN}Menu Options:{RESET}")
