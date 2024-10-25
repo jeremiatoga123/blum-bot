@@ -115,6 +115,13 @@ The bot has several features accessible through a menu system:
 
 ## Menu Options
 
+### 1. Play Game Every 5 Hours
+- Playing game include farming, and checking daily with looping every 5 hours
+- Set minimum and maximum points
+- Configure number of threads
+- Automated gameplay
+- Telegram notifications for farming summary
+
 ### 1. Play Game
 - Set minimum and maximum points
 - Configure number of threads

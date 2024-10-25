@@ -794,7 +794,7 @@ def auto_loop_process(queries):
 
 def show_menu():
     print(f"\n{CYAN}Menu Options:{RESET}")
-    print(f"1. Play Game Eevery 5 Hours")
+    print(f"1. Play Game Every 5 Hours")
     print(f"2. Play Game")
     print(f"3. Check Account Info")
     print(f"4. Check Daily Reward")
