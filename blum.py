@@ -767,7 +767,7 @@ def auto_loop_process(queries):
                     
             if not should_exit:
                 print(f"\n{CYAN}Play game completed. Waiting 5 hours before next game...{RESET}")
-                for remaining in range(180000, 0, -1):
+                for remaining in range(18000, 0, -1):
                     if should_exit:
                         break
                     hours = remaining // 3600
