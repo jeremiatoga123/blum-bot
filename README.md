@@ -47,7 +47,7 @@ Choose "Play Game" if you want:
 First, join Blum by clicking here:
 
 <div align="justify">
-  <a href="https://t.me/blum/app?startapp=ref_eWbRQkPdY2">
+  <a href="https://t.me/blum/app?startapp=ref_C5Lc1ivE3r">
     <img src="https://img.shields.io/badge/Join-BLUM-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="Join Blum"/>
   </a>
 </div>
@@ -185,7 +185,7 @@ This is free Api, but if you need private api key dm me
 
 <div align="justify">
   <a href="https://t.me/ggtogss">
-    <img src="https://img.shields.io/badge/@ggtogss-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@ggtogss"/>
+    <img src="https://img.shields.io/badge/@ggtogss-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@Toga069"/>
   </a>
 </div>
 
