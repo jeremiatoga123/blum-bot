@@ -184,8 +184,8 @@ Please don't spam if you don't want the api down
 This is free Api, but if you need private api key dm me
 
 <div align="justify">
-  <a href="https://t.me/ggtogss">
-    <img src="https://img.shields.io/badge/@ggtogss-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@Toga069"/>
+  <a href="https://t.me/Toga069">
+    <img src="https://img.shields.io/badge/Toga-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white&scale=2" height="35" alt="@Toga069"/>
   </a>
 </div>
 
